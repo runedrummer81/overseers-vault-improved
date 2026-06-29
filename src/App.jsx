@@ -6,6 +6,8 @@ import CampaignPage from "./pages/CampaignPage";
 import SessionPage from "./pages/SessionPage";
 import BestiaryPage from "./pages/BestiaryPage";
 
+const basename = import.meta.env.DEV ? "/" : "/overseers-vault-improved";
+
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
   if (user === undefined) return <div>Loading...</div>;
@@ -16,7 +18,7 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename="/overseers-vault-improved">
+      <BrowserRouter basename={basename}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
