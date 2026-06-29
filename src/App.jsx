@@ -16,7 +16,7 @@ function ProtectedRoute({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/overseers-vault-improved">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route
