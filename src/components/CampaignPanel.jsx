@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 function timeAgo(timestamp) {
   if (!timestamp) return "Never opened";
@@ -18,18 +17,17 @@ export default function CampaignPanel({
   onOpen,
 }) {
   const [hoveredId, setHoveredId] = useState(null);
-  const navigate = useNavigate();
 
   return (
-    <div className="w-80 min-h-screen bg-[#0f0f1f] border-l border-[#1e1e3a] flex flex-col">
+    <div className="w-80 min-h-screen flex flex-col pt-24">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-6 border-b border-[#1e1e3a]">
-        <h2 className="text-lg font-bold text-white uppercase tracking-widest">
+      <div className="flex items-center justify-between px-6 py-6">
+        <h2 className="text-lg font-bold text-primary uppercase tracking-widest">
           Campaigns
         </h2>
         <button
           onClick={onNew}
-          className="text-[#c9a84c] hover:text-white transition-colors text-2xl leading-none"
+          className="text-secondary hover:text-primary transition-colors text-2xl leading-none"
           title="New Campaign"
         >
           +
@@ -39,11 +37,11 @@ export default function CampaignPanel({
       {/* Campaign list */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <p className="text-[#8a8a9a] text-sm px-6 py-8">Loading...</p>
+          <p className="text-secondary text-sm px-6 py-8">Loading...</p>
         ) : campaigns.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-[#8a8a9a] text-sm">No campaigns yet.</p>
-            <p className="text-[#8a8a9a] text-xs mt-2">
+            <p className="text-secondary text-sm">No campaigns yet.</p>
+            <p className="text-secondary text-xs mt-2">
               Click + to create your first one.
             </p>
           </div>
@@ -51,26 +49,26 @@ export default function CampaignPanel({
           campaigns.map((campaign) => (
             <div
               key={campaign.id}
-              className="relative group border-b border-[#1e1e3a] px-6 py-4 cursor-pointer hover:bg-[#1a1a3a] transition-all duration-200"
+              className="relative group  px-6 py-4 cursor-pointer hover:bg-dark-muted transition-all duration-200"
               onMouseEnter={() => setHoveredId(campaign.id)}
               onMouseLeave={() => setHoveredId(null)}
               onClick={() => onOpen(campaign)}
             >
-              {/* Gold left border on hover */}
+              {/* Left border on hover */}
               <div
-                className={`absolute left-0 top-0 bottom-0 w-0.5 bg-[#c9a84c] transition-opacity duration-200 ${hoveredId === campaign.id ? "opacity-100" : "opacity-0"}`}
+                className={`absolute left-0 top-0 bottom-0 w-0.5 bg-secondary transition-opacity duration-200 ${hoveredId === campaign.id ? "opacity-100" : "opacity-0"}`}
               />
 
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-1">
-                  <span className="text-white text-sm font-semibold">
+                  <span className="text-primary text-sm font-semibold">
                     {campaign.name}
                   </span>
-                  <span className="text-[#8a8a9a] text-xs">
+                  <span className="text-secondary text-xs">
                     {campaign.playerCount}{" "}
                     {campaign.playerCount === 1 ? "player" : "players"}
                   </span>
-                  <span className="text-[#8a8a9a] text-xs">
+                  <span className="text-secondary text-xs">
                     {timeAgo(campaign.lastOpened)}
                   </span>
                 </div>
@@ -81,7 +79,7 @@ export default function CampaignPanel({
                     e.stopPropagation();
                     onDelete(campaign.id);
                   }}
-                  className="opacity-0 group-hover:opacity-100 text-[#8a8a9a] hover:text-red-400 transition-all duration-200 text-xs uppercase tracking-widest"
+                  className="opacity-0 group-hover:opacity-100 text-secondary hover:text-red-400 transition-all duration-200 text-xs uppercase tracking-widest"
                 >
                   Delete
                 </button>

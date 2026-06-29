@@ -7,6 +7,8 @@ import { useCampaigns } from "../hooks/useCampaigns";
 import Sidebar from "../components/Sidebar";
 import CampaignPanel from "../components/CampaignPanel";
 import NewCampaignOverlay from "../components/NewCampaignOverlay";
+import Border from "../components/Border";
+import TopBar from "../components/TopBar";
 
 export default function StartPage() {
   const { user } = useAuth();
@@ -20,7 +22,6 @@ export default function StartPage() {
   } = useCampaigns(user?.uid);
   const [activeMenu, setActiveMenu] = useState("campaigns");
   const [overlayOpen, setOverlayOpen] = useState(false);
-  const [avatarOpen, setAvatarOpen] = useState(false);
 
   const handleOpen = async (campaign) => {
     await updateLastOpened(campaign.id);
@@ -38,68 +39,35 @@ export default function StartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex">
-      {/* Left sidebar */}
-      <Sidebar active={activeMenu} onChange={setActiveMenu} />
+    <>
+      <Border />
+      <TopBar user={user} />
+      <div className="min-h-screen bg-dark-bg flex">
+        {/* Left sidebar */}
+        <Sidebar active={activeMenu} onChange={setActiveMenu} />
 
-      {/* Main area */}
-      <div className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <div className="h-16 border-b border-[#1e1e3a] flex items-center justify-end px-8 relative">
-          <button
-            onClick={() => setAvatarOpen(!avatarOpen)}
-            className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#c9a84c] hover:border-white transition-colors"
-          >
-            {user?.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt="avatar"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-[#c9a84c] flex items-center justify-center text-[#1a1a2e] font-bold text-sm">
-                {user?.displayName?.[0] ?? user?.email?.[0] ?? "?"}
-              </div>
-            )}
-          </button>
-
-          {/* Avatar dropdown */}
-          {avatarOpen && (
-            <div className="absolute top-14 right-8 bg-[#0f0f1f] border border-[#1e1e3a] p-4 flex flex-col gap-3 z-50 min-w-48">
-              <p className="text-white text-sm font-semibold">
-                {user?.displayName ?? "Adventurer"}
-              </p>
-              <p className="text-[#8a8a9a] text-xs">{user?.email}</p>
-              <hr className="border-[#1e1e3a]" />
-              <button
-                onClick={() => signOut(auth)}
-                className="text-left text-sm text-[#8a8a9a] hover:text-red-400 transition-colors uppercase tracking-widest"
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
+        {/* Main area */}
+        <div className="flex-1 flex flex-col">
+          {/* Empty center */}
+          <div className="flex-1" />
         </div>
 
-        {/* Empty center */}
-        <div className="flex-1" />
+        {/* Right campaign panel */}
+        <CampaignPanel
+          campaigns={campaigns}
+          loading={loading}
+          onNew={() => setOverlayOpen(true)}
+          onDelete={handleDelete}
+          onOpen={handleOpen}
+        />
+
+        {/* New campaign overlay */}
+        <NewCampaignOverlay
+          isOpen={overlayOpen}
+          onClose={() => setOverlayOpen(false)}
+          onCreate={createCampaign}
+        />
       </div>
-
-      {/* Right campaign panel */}
-      <CampaignPanel
-        campaigns={campaigns}
-        loading={loading}
-        onNew={() => setOverlayOpen(true)}
-        onDelete={handleDelete}
-        onOpen={handleOpen}
-      />
-
-      {/* New campaign overlay */}
-      <NewCampaignOverlay
-        isOpen={overlayOpen}
-        onClose={() => setOverlayOpen(false)}
-        onCreate={createCampaign}
-      />
-    </div>
+    </>
   );
 }
