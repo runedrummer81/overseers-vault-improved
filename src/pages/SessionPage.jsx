@@ -181,7 +181,7 @@ export default function SessionPage() {
           onClick={handleBack}
           className="text-[#8a8a9a] hover:text-[#c9a84c] uppercase tracking-widest text-xs transition-colors flex items-center gap-2"
         >
-          ← Back
+          ← Backs
         </button>
 
         {/* Session name */}
