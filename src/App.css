@@ -1,15 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-museum-cream: #f2f1da;
-  --color-museum-blue: #c1cddb;
-  --color-museum-crimson: #631d27;
-  --font-flama: "Flama", sans-serif;
-  --color-primary: #39516f;
+  /* Colors */
+  --color-primary: #daca89;
+  --color-secondary: #bf883c;
+  --color-dark-bg: #141411;
+  --color-dark-muted: #1c1b18;
+  --color-dark-border: #403c29;
+  --color-combat: #b91c1c;
+  --color-combat-dark: #8b1414;
+
+  /* Font */
+  --font-garamond: "EB Garamond", serif;
 }
 
 body {
-  background-color: #c1cddb;
+  background-color: #141411;
+  font-family: "EB Garamond", serif;
 }
 
 .ProseMirror ul {
