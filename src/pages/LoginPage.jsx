@@ -3,6 +3,7 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth, provider } from "../firebase/config";
 import { useNavigate } from "react-router-dom";
@@ -32,6 +33,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -40,6 +42,7 @@ export default function LoginPage() {
 
   const basePath = import.meta.env.DEV ? "" : "/overseers-vault-improved";
 
+  // Blinking eye
   useEffect(() => {
     let mounted = true;
     const blink = async () => {
@@ -60,6 +63,20 @@ export default function LoginPage() {
       mounted = false;
     };
   }, [scaleY, isPasswordFocused, showPassword]);
+
+  // Auto-dismiss error after 4 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(""), 4000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
+  // Auto-dismiss message after 4 seconds
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(""), 4000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -96,6 +113,20 @@ export default function LoginPage() {
       else setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError("");
+    if (!email) {
+      setError("Enter your email above first.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setMessage("A reset scroll has been sent to your inbox!");
+    } catch (err) {
+      setError("Could not send reset email. Check the address and try again.");
     }
   };
 
@@ -150,11 +181,6 @@ export default function LoginPage() {
             transition={{ duration: 0.25 }}
             className="w-full flex flex-col items-center"
           >
-            {/* Error */}
-            {error && (
-              <p className="text-red-400 text-sm text-center mb-4">{error}</p>
-            )}
-
             {/* Email input */}
             <div className="w-full border-2 border-secondary p-2 mb-4 transition-colors duration-200 focus-within:border-primary">
               <input
@@ -167,7 +193,7 @@ export default function LoginPage() {
             </div>
 
             {/* Password input */}
-            <div className="w-full border-2 border-secondary p-2 mb-4 relative transition-colors duration-200 focus-within:border-primary">
+            <div className="w-full border-2 border-secondary p-2 mb-2 relative transition-colors duration-200 focus-within:border-primary">
               <input
                 ref={passwordRef}
                 type={showPassword ? "text" : "password"}
@@ -230,6 +256,18 @@ export default function LoginPage() {
                 </motion.div>
               </button>
             </div>
+
+            {/* Forgot password — only shown on login mode */}
+            {!isRegistering && (
+              <div className="w-full flex justify-end mb-4">
+                <button
+                  onClick={handleForgotPassword}
+                  className="text-secondary text-xs hover:text-primary transition-colors"
+                >
+                  Lost your magical key?
+                </button>
+              </div>
+            )}
 
             {/* Enter Realm / Forge Account button */}
             <button
@@ -296,6 +334,44 @@ export default function LoginPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Error message — fixed at bottom, never pushes layout */}
+      <AnimatePresence>
+        {error && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-12 left-1/2 -translate-x-1/2 text-red-400 text-2xl font-bold text-center pointer-events-none whitespace-nowrap"
+            style={{
+              textShadow:
+                "0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4)",
+            }}
+          >
+            {error}
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      {/* Success message — fixed at bottom */}
+      <AnimatePresence>
+        {message && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-12 left-1/2 -translate-x-1/2 text-primary text-2xl font-bold text-center pointer-events-none whitespace-nowrap"
+            style={{
+              textShadow:
+                "0 0 10px rgba(218, 202, 137, 0.8), 0 0 20px rgba(218, 202, 137, 0.4)",
+            }}
+          >
+            {message}
+          </motion.p>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
