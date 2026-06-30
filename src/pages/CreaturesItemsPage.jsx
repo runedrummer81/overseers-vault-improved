@@ -79,7 +79,7 @@ export default function CreaturesItemsPage() {
         <div className="flex flex-1 min-h-0">
           <div className="flex-1 flex flex-col pr-10 py-6 min-w-0 min-h-0">
             <div
-              className={`flex items-center gap-3 flex-wrap ${
+              className={`flex items-start gap-4 flex-wrap ${
                 tabs.length > 0 ? "mb-2" : "mb-5"
               }`}
             >
@@ -95,7 +95,7 @@ export default function CreaturesItemsPage() {
             {activeTab ? (
               <EntryBuilderPlaceholder type={activeTab.type} />
             ) : (
-              <div className="flex-1 min-h-0 flex items-center justify-center text-center p-10">
+              <div className="flex-1 min-h-0 border border-dashed border-dark-border flex items-center justify-center text-center p-10">
                 <div>
                   <p className="text-[#c9c3b0] text-base mb-1.5">
                     Nothing open right now
