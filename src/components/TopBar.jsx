@@ -1,12 +1,65 @@
 import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase/config";
+import { useSessionDates } from "../hooks/useSessionDates";
+import SessionCalendar from "./SessionCalendar";
 
 export default function TopBar({ user }) {
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  const { sessionDates, setSessionDate, removeSessionDate, daysUntilNext } =
+    useSessionDates(user?.uid);
 
   return (
     <div className="fixed top-15 right-30 z-[10000] flex items-center gap-4">
+      {/* Calendar */}
+      <div className="relative">
+        <button
+          onClick={() => setCalendarOpen(!calendarOpen)}
+          title={
+            daysUntilNext !== null
+              ? `${daysUntilNext} day${daysUntilNext === 1 ? "" : "s"} to your next session!`
+              : "No upcoming session"
+          }
+          className={`transition-colors duration-200 ${
+            daysUntilNext !== null
+              ? "text-primary drop-shadow-[0_0_6px_rgba(218,202,137,0.8)]"
+              : "text-secondary hover:text-primary"
+          }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-6 h-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+        </button>
+
+        {calendarOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setCalendarOpen(false)}
+            />
+            <SessionCalendar
+              sessionDates={sessionDates}
+              onSetDate={setSessionDate}
+              onRemoveDate={removeSessionDate}
+              onClose={() => setCalendarOpen(false)}
+            />
+          </>
+        )}
+      </div>
+
       {/* Info / onboarding */}
       <button
         title="Information"
@@ -75,10 +128,8 @@ export default function TopBar({ user }) {
           )}
         </button>
 
-        {/* Dropdown */}
         {avatarOpen && (
           <>
-            {/* Backdrop to close */}
             <div
               className="fixed inset-0 z-40"
               onClick={() => setAvatarOpen(false)}
