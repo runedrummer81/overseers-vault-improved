@@ -85,7 +85,7 @@ export default function Border() {
             <img
               src={`${basePath}/images/logo.svg`}
               alt="The Overseer's Vault"
-              className="object-contain transition-transform duration-300 hover:scale-105"
+              className="object-contain transition-transform duration-300 mt-0.5"
             />
           </Link>
         </div>

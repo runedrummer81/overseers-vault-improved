@@ -37,6 +37,7 @@ export default function SidebarButton({
   active,
   onClick,
   className = "text-2xl px-6 py-3",
+  minWidth = "0px",
 }) {
   const activeColor = "var(--color-primary)";
   const inactiveColor = "var(--color-secondary)";
@@ -52,10 +53,13 @@ export default function SidebarButton({
       style={{
         filter: active ? "drop-shadow(0 0 8px rgba(191,136,60,0.6))" : "none",
         transition: "filter 0.3s ease",
+        minWidth,
       }}
     >
       {/* Text — always visible, defines button size */}
-      <div className={`flex items-center whitespace-nowrap ${className}`}>
+      <div
+        className={`flex items-center whitespace-nowrap flex-1 ${className}`}
+      >
         <motion.span
           className="uppercase tracking-widest"
           animate={{ color }}
@@ -66,7 +70,7 @@ export default function SidebarButton({
       </div>
 
       {/* Invisible arrow to reserve space so button width stays stable */}
-      <div className="flex items-stretch -ml-px opacity-0 pointer-events-none">
+      <div className="flex items-stretch ml-6 opacity-0 pointer-events-none">
         <Arrow color={color} />
       </div>
 
@@ -80,7 +84,7 @@ export default function SidebarButton({
         transition={{ duration: 0.2, ease: "easeInOut" }}
       >
         <div
-          className={`flex-1 ${className} pr-70`}
+          className={`flex-1 ${className}`}
           style={{
             borderTop: `2px solid ${color}`,
             borderLeft: `2px solid ${color}`,
