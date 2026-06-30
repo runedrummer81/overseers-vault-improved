@@ -7,6 +7,7 @@ import LibraryPanel from "../components/creatures-items/LibraryPanel";
 import NewEntryMenu from "../components/creatures-items/NewEntryMenu";
 import EntryTabs from "../components/creatures-items/EntryTabs";
 import EntryBuilderPlaceholder from "../components/creatures-items/EntryBuilderPlaceholder";
+import CreatureBuilder from "../components/creatures-items/creature/CreatureBuilder";
 
 function generateTabId() {
   return `tab-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -14,13 +15,40 @@ function generateTabId() {
 
 export default function CreaturesItemsPage() {
   const { user } = useAuth();
-  const { entries, loading } = useLibraryEntries(user?.uid);
+  const { entries, loading, saveEntry } = useLibraryEntries(user?.uid);
 
   const [tabs, setTabs] = useState([]);
   const [activeTabId, setActiveTabId] = useState(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [savingTabId, setSavingTabId] = useState(null);
 
   const activeTab = tabs.find((t) => t.tabId === activeTabId) ?? null;
+
+  const updateTabLabel = (tabId, label) => {
+    setTabs((prev) =>
+      prev.map((t) =>
+        t.tabId === tabId ? { ...t, label: label || "New creature" } : t,
+      ),
+    );
+  };
+
+  const handleSaveCreature = async (data, tabId) => {
+    const tab = tabs.find((t) => t.tabId === tabId);
+    setSavingTabId(tabId);
+    try {
+      const savedId = await saveEntry(
+        { ...data, type: "creature" },
+        tab?.entryId ?? null,
+      );
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.tabId === tabId ? { ...t, entryId: savedId, dirty: false } : t,
+        ),
+      );
+    } finally {
+      setSavingTabId(null);
+    }
+  };
 
   const openNewTab = (type) => {
     const tabId = generateTabId();
@@ -79,7 +107,7 @@ export default function CreaturesItemsPage() {
         <div className="flex flex-1 min-h-0">
           <div className="flex-1 flex flex-col pr-10 py-6 min-w-0 min-h-0">
             <div
-              className={`flex items-start gap-4 flex-wrap ${
+              className={`flex items-start gap-3 flex-wrap ${
                 tabs.length > 0 ? "mb-2" : "mb-5"
               }`}
             >
@@ -92,8 +120,26 @@ export default function CreaturesItemsPage() {
               />
             </div>
 
+            {tabs.length > 0 && (
+              <p className="text-secondary text-[11px] mb-5">
+                Switching tabs keeps your draft &mdash; nothing is lost until
+                you save or close it.
+              </p>
+            )}
+
             {activeTab ? (
-              <EntryBuilderPlaceholder type={activeTab.type} />
+              activeTab.type === "creature" ? (
+                <CreatureBuilder
+                  key={activeTab.tabId}
+                  onSave={(data) => handleSaveCreature(data, activeTab.tabId)}
+                  isSaving={savingTabId === activeTab.tabId}
+                  onLabelChange={(label) =>
+                    updateTabLabel(activeTab.tabId, label)
+                  }
+                />
+              ) : (
+                <EntryBuilderPlaceholder type={activeTab.type} />
+              )
             ) : (
               <div className="flex-1 min-h-0 border border-dashed border-dark-border flex items-center justify-center text-center p-10">
                 <div>
