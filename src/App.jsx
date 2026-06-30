@@ -4,7 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import StartPage from "./pages/StartPage";
 import CampaignPage from "./pages/CampaignPage";
 import SessionPage from "./pages/SessionPage";
-import BestiaryPage from "./pages/BestiaryPage";
+import CreaturesItemsPage from "./pages/CreaturesItemsPage";
 
 const basename = import.meta.env.DEV ? "/" : "/overseers-vault-improved";
 
@@ -46,10 +46,10 @@ export default function App() {
             }
           />
           <Route
-            path="/bestiary"
+            path="/creatures-items"
             element={
               <ProtectedRoute>
-                <BestiaryPage />
+                <CreaturesItemsPage />
               </ProtectedRoute>
             }
           />
