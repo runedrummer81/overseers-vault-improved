@@ -120,32 +120,7 @@ function mapOpen5eToCreature(m) {
   };
 }
 
-function BackButton({ onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 text-secondary hover:text-primary transition-colors duration-150 text-xs uppercase tracking-widest w-fit"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-4 h-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15 19l-7-7 7-7"
-        />
-      </svg>
-      Back
-    </button>
-  );
-}
-
-export default function Open5eSearch({ onImport, onBack }) {
+export default function Open5eSearch({ onImport }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -209,8 +184,6 @@ export default function Open5eSearch({ onImport, onBack }) {
 
   return (
     <div className="flex flex-col gap-6 h-full">
-      <BackButton onClick={onBack} />
-
       <div>
         <p className="text-primary text-xl uppercase tracking-widest mb-1.5">
           Import from Open5e

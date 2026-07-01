@@ -120,13 +120,6 @@ export default function CreaturesItemsPage() {
               />
             </div>
 
-            {tabs.length > 0 && (
-              <p className="text-secondary text-[11px] mb-5">
-                Switching tabs keeps your draft &mdash; nothing is lost until
-                you save or close it.
-              </p>
-            )}
-
             {activeTab ? (
               activeTab.type === "creature" ? (
                 <CreatureBuilder

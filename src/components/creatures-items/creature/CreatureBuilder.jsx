@@ -4,6 +4,7 @@ import ChoiceCard from "../ChoiceCard";
 import Open5eSearch from "./Open5eSearch";
 import CreatureForm from "./CreatureForm";
 import CreatureStatBlockPreview from "./CreatureStatBlockPreview";
+import Breadcrumb from "./Breadcrumb";
 import { EMPTY_CREATURE } from "./creatureConstants";
 
 function ImportIcon() {
@@ -44,41 +45,15 @@ function ManualIcon() {
   );
 }
 
-function BackButton({ onClick, label = "Back" }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 text-secondary hover:text-primary transition-colors duration-150 text-xs uppercase tracking-widest w-fit shrink-0"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-4 h-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15 19l-7-7 7-7"
-        />
-      </svg>
-      {label}
-    </button>
-  );
-}
-
 export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
   const [view, setView] = useState("choice");
+  const [method, setMethod] = useState(null);
   const [creature, setCreature] = useState(EMPTY_CREATURE);
   const [autoCalc, setAutoCalc] = useState(true);
 
   const handleCreatureChange = (updated) => {
     setCreature(updated);
-    if (onLabelChange) {
-      onLabelChange(updated.name || "New creature");
-    }
+    if (onLabelChange) onLabelChange(updated.name || "New creature");
   };
 
   const handleImport = (imported) => {
@@ -92,10 +67,58 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
     if (onSave) await onSave(creature);
   };
 
+  const methodLabel =
+    method === "import" ? "Import from Open5e" : "Build manually";
+
+  // Breadcrumb steps computed from current view — lives outside AnimatePresence
+  // so only individual steps animate in/out, not the whole breadcrumb
+  const breadcrumbSteps =
+    view === "import"
+      ? [
+          { label: "New creature", onClick: () => setView("choice") },
+          { label: "Import from Open5e" },
+        ]
+      : view === "form"
+        ? [
+            { label: "New creature" },
+            {
+              label: methodLabel,
+              onClick: () => {
+                setCreature(EMPTY_CREATURE);
+                if (onLabelChange) onLabelChange("New creature");
+                setView(method);
+              },
+              tooltip: "Go back - your current changes will be lost!",
+            },
+            { label: creature.name?.trim() || "Stat block" },
+          ]
+        : null;
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      {/* ── Persistent header — outside AnimatePresence so breadcrumb
+          never fades between views, only individual steps animate ── */}
+      {breadcrumbSteps && (
+        <div className="flex items-center justify-between pt-4 pb-3 shrink-0">
+          <Breadcrumb steps={breadcrumbSteps} />
+          {view === "form" && (
+            <button
+              onClick={handleSave}
+              disabled={!creature.name?.trim() || isSaving}
+              className={`px-5 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 shrink-0 ml-4 ${
+                creature.name?.trim() && !isSaving
+                  ? "bg-secondary text-dark-bg hover:bg-primary cursor-pointer"
+                  : "bg-dark-muted text-secondary cursor-not-allowed"
+              }`}
+            >
+              {isSaving ? "Saving..." : "Save creature"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── View content — fades in/out independently of breadcrumb ── */}
       <AnimatePresence mode="wait">
-        {/* Choice screen */}
         {view === "choice" && (
           <motion.div
             key="choice"
@@ -118,13 +141,17 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
                 icon={<ImportIcon />}
                 title="Import from Open5e"
                 description="Search the SRD monster library and import a full stat block in one click."
-                onClick={() => setView("import")}
+                onClick={() => {
+                  setMethod("import");
+                  setView("import");
+                }}
               />
               <ChoiceCard
                 icon={<ManualIcon />}
                 title="Build manually"
                 description="Fill in the stat block yourself from scratch or adapt a homebrew creature."
                 onClick={() => {
+                  setMethod("manual");
                   setCreature(EMPTY_CREATURE);
                   setView("form");
                 }}
@@ -133,7 +160,6 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
           </motion.div>
         )}
 
-        {/* Import search */}
         {view === "import" && (
           <motion.div
             key="import"
@@ -141,16 +167,12 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="py-4 flex flex-col flex-1 min-h-0"
+            className="flex flex-col flex-1 min-h-0"
           >
-            <Open5eSearch
-              onImport={handleImport}
-              onBack={() => setView("choice")}
-            />
+            <Open5eSearch onImport={handleImport} />
           </motion.div>
         )}
 
-        {/* Form + live preview — layout B */}
         {view === "form" && (
           <motion.div
             key="form"
@@ -158,50 +180,23 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="flex flex-col flex-1 min-h-0"
+            className="flex flex-1 min-h-0 gap-0"
           >
-            {/* Top bar: back + save */}
-            <div className="flex items-center justify-between py-4 shrink-0">
-              <BackButton
-                onClick={() => setView("choice")}
-                label="Start over"
+            <div className="overflow-y-auto pr-6" style={{ flex: "0 0 65%" }}>
+              <CreatureForm
+                creature={creature}
+                onChange={handleCreatureChange}
+                autoCalc={autoCalc}
+                onAutoCalcToggle={() => setAutoCalc((a) => !a)}
               />
-              <button
-                onClick={handleSave}
-                disabled={!creature.name?.trim() || isSaving}
-                className={`px-5 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 ${
-                  creature.name?.trim() && !isSaving
-                    ? "bg-secondary text-dark-bg hover:bg-primary"
-                    : "bg-dark-muted text-secondary cursor-not-allowed"
-                }`}
-              >
-                {isSaving ? "Saving..." : "Save creature"}
-              </button>
             </div>
-
-            {/* 65/35 split */}
-            <div className="flex flex-1 min-h-0 gap-0">
-              {/* Form — 65%, scrollable */}
-              <div className="overflow-y-auto pr-6" style={{ flex: "0 0 65%" }}>
-                <CreatureForm
-                  creature={creature}
-                  onChange={handleCreatureChange}
-                  autoCalc={autoCalc}
-                  onAutoCalcToggle={() => setAutoCalc((a) => !a)}
-                />
-              </div>
-
-              {/* Divider */}
-              <div className="border-l border-dark-border shrink-0" />
-
-              {/* Live stat block preview — 35%, scrollable */}
-              <div className="flex-1 overflow-y-auto pl-6 py-2">
-                <p className="text-[10px] uppercase tracking-widest text-secondary mb-4 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-secondary inline-block animate-pulse" />
-                  Live preview
-                </p>
-                <CreatureStatBlockPreview creature={creature} />
-              </div>
+            <div className="border-l border-dark-border shrink-0" />
+            <div className="flex-1 overflow-y-auto pl-6 py-2">
+              <p className="text-[10px] uppercase tracking-widest text-secondary mb-4 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-secondary inline-block animate-pulse" />
+                Live preview
+              </p>
+              <CreatureStatBlockPreview creature={creature} />
             </div>
           </motion.div>
         )}
