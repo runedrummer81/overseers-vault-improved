@@ -357,8 +357,11 @@ export default function Open5eSearch({ active, selected, onSelectCreature }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="flex-1 min-h-0 overflow-y-auto border border-dark-border mt-4"
-              style={{ padding: "20px" }}
+              className="flex-1 min-h-0 overflow-y-auto border-2 border-primary mt-4 bg-dark-muted"
+              style={{
+                padding: "20px",
+                boxShadow: "0 0 18px 2px rgba(218, 202, 137, 0.15)",
+              }}
             >
               <CreatureStatBlockPreview creature={selected} />
             </motion.div>

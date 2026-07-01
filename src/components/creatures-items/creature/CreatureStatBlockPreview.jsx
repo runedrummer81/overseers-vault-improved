@@ -1,16 +1,50 @@
 import { avgDice } from "./creatureConstants";
 
+// Glowing gradient divider — same technique as the breadcrumb underline
 function Divider() {
-  return <div className="border-t-2 border-secondary my-3" />;
+  return (
+    <div className="relative h-px my-4">
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(90deg, transparent, var(--color-secondary) 25%, var(--color-secondary) 75%, transparent)",
+          filter: "blur(2px)",
+          opacity: 0.5,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(90deg, transparent, var(--color-secondary) 25%, var(--color-secondary) 75%, transparent)",
+        }}
+      />
+    </div>
+  );
 }
 
 function Row({ label, value }) {
   if (!value) return null;
   return (
-    <p className="text-xs leading-relaxed text-[#c9c3b0]">
+    <p className="text-sm leading-relaxed text-[#e2ddd0]">
       <span className="font-bold text-secondary">{label} </span>
       {value}
     </p>
+  );
+}
+
+// Section heading — left accent bar + bold uppercase label
+function SectionHeader({ children }) {
+  return (
+    <div className="flex items-center gap-2.5 mb-3">
+      <div className="w-0.5 h-4 bg-secondary shrink-0" />
+      <p className="text-secondary text-sm uppercase tracking-widest font-bold">
+        {children}
+      </p>
+    </div>
   );
 }
 
@@ -19,9 +53,8 @@ function formatActionText(action) {
   const mod = parseInt(action.damageModifier) || 0;
   const primaryAvg = avgDice(action.damageDice) + mod;
 
-  if (action.type === "Multiattack" || action.type === "Special") {
+  if (action.type === "Multiattack" || action.type === "Special")
     return `${name}. ${action.description || ""}`;
-  }
 
   if (action.type === "Attack") {
     if (!action.toHit && !action.damageDice)
@@ -63,12 +96,9 @@ function formatActionText(action) {
       const halfStr = action.halfOnSave
         ? ", or half as much on a successful one"
         : "";
-      saveStr = action.saveDC
-        ? `DC ${action.saveDC} ${action.saveStat} saving throw, taking ${dmgStr} on a failed save${halfStr}.`
-        : "";
+      saveStr = `DC ${action.saveDC} ${action.saveStat} saving throw, taking ${dmgStr} on a failed save${halfStr}.`;
     }
-    let text = `${name}${rechargeStr}. ${action.description || ""}${saveStr ? " " + saveStr : ""}`;
-    return text.trim();
+    return `${name}${rechargeStr}. ${action.description || ""}${saveStr ? " " + saveStr : ""}`.trim();
   }
 
   return `${name}. ${action.description || ""}`;
@@ -85,21 +115,29 @@ export default function CreatureStatBlockPreview({ creature }) {
     .join(" ");
 
   return (
-    <div className="text-[#c9c3b0] text-xs leading-relaxed">
-      {/* Header */}
-      <div className="mb-3">
-        <h2 className="text-primary text-xl font-bold uppercase tracking-wide leading-tight">
+    <div className="text-[#e2ddd0] leading-relaxed">
+      {/* Header — name large and authoritative, type in elegant italic */}
+      <div className="mb-2">
+        <h2
+          className="text-primary font-bold uppercase tracking-wide leading-tight"
+          style={{ fontSize: "1.6rem" }}
+        >
           {creature.name || "New creature"}
         </h2>
         {typeBlock && (
-          <p className="text-secondary text-xs italic mt-0.5">{typeBlock}</p>
+          <p
+            className="text-secondary text-base mt-1"
+            style={{ fontFamily: "EB Garamond, serif" }}
+          >
+            {typeBlock}
+          </p>
         )}
       </div>
 
       <Divider />
 
       {/* Combat basics */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {creature.ac && (
           <Row
             label="Armor Class"
@@ -118,16 +156,12 @@ export default function CreatureStatBlockPreview({ creature }) {
       <Divider />
 
       {/* Ability scores */}
-      <div className="grid grid-cols-6 gap-1 text-center my-2">
+      <div className="grid grid-cols-6 gap-1 text-center my-3">
         {["str", "dex", "con", "int", "wis", "cha"].map((stat) => (
-          <div key={stat}>
-            <p className="font-bold text-secondary text-[10px] uppercase">
-              {stat}
-            </p>
-            <p className="text-[#c9c3b0] text-[10px]">
-              {creature[stat] || "—"}
-            </p>
-            <p className="text-[#c9c3b0] text-[10px]">
+          <div key={stat} className="flex flex-col gap-0.5">
+            <p className="font-bold text-secondary text-sm uppercase">{stat}</p>
+            <p className="text-[#e2ddd0] text-base">{creature[stat] || "—"}</p>
+            <p className="text-[#e2ddd0] text-sm">
               {creature[`${stat}Mod`] ? `(${creature[`${stat}Mod`]})` : ""}
             </p>
           </div>
@@ -136,54 +170,56 @@ export default function CreatureStatBlockPreview({ creature }) {
 
       <Divider />
 
-      {/* Saving throws — only those explicitly set */}
-      {(() => {
-        const saves = ["str", "dex", "con", "int", "wis", "cha"]
-          .filter((s) => creature[`${s}Save`])
-          .map((s) => `${s.toUpperCase()} ${creature[`${s}Save`]}`)
-          .join(", ");
-        return saves ? <Row label="Saving Throws" value={saves} /> : null;
-      })()}
-
-      {creature.resistances && (
-        <Row label="Damage Resistances" value={creature.resistances} />
-      )}
-      {creature.immunities && (
-        <Row label="Damage Immunities" value={creature.immunities} />
-      )}
-      {creature.vulnerabilities && (
-        <Row label="Damage Vulnerabilities" value={creature.vulnerabilities} />
-      )}
-      {creature.conditionImmunities && (
-        <Row
-          label="Condition Immunities"
-          value={creature.conditionImmunities}
-        />
-      )}
-      {creature.senses && (
-        <Row
-          label="Senses"
-          value={`${creature.senses}${creature.passivePerception ? `, passive Perception ${creature.passivePerception}` : ""}`}
-        />
-      )}
-      {creature.languages && (
-        <Row label="Languages" value={creature.languages} />
-      )}
-      {creature.cr && <Row label="Challenge" value={creature.cr} />}
+      {/* Properties */}
+      <div className="flex flex-col gap-1.5">
+        {(() => {
+          const saves = ["str", "dex", "con", "int", "wis", "cha"]
+            .filter((s) => creature[`${s}Save`])
+            .map((s) => `${s.toUpperCase()} ${creature[`${s}Save`]}`)
+            .join(", ");
+          return saves ? <Row label="Saving Throws" value={saves} /> : null;
+        })()}
+        {creature.resistances && (
+          <Row label="Damage Resistances" value={creature.resistances} />
+        )}
+        {creature.immunities && (
+          <Row label="Damage Immunities" value={creature.immunities} />
+        )}
+        {creature.vulnerabilities && (
+          <Row
+            label="Damage Vulnerabilities"
+            value={creature.vulnerabilities}
+          />
+        )}
+        {creature.conditionImmunities && (
+          <Row
+            label="Condition Immunities"
+            value={creature.conditionImmunities}
+          />
+        )}
+        {creature.senses && (
+          <Row
+            label="Senses"
+            value={`${creature.senses}${creature.passivePerception ? `, passive Perception ${creature.passivePerception}` : ""}`}
+          />
+        )}
+        {creature.languages && (
+          <Row label="Languages" value={creature.languages} />
+        )}
+        {creature.cr && <Row label="Challenge" value={creature.cr} />}
+      </div>
 
       {/* Traits */}
       {creature.traits?.length > 0 && (
         <>
           <Divider />
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {creature.traits.map((trait) => (
               <p
                 key={trait.id}
-                className="text-xs leading-relaxed text-[#c9c3b0]"
+                className="text-sm leading-relaxed text-[#e2ddd0]"
               >
-                <span className="font-bold italic text-[#c9c3b0]">
-                  {trait.name}.{" "}
-                </span>
+                <span className="font-bold text-secondary">{trait.name}. </span>
                 {trait.description}
               </p>
             ))}
@@ -195,16 +231,14 @@ export default function CreatureStatBlockPreview({ creature }) {
       {creature.actions?.length > 0 && (
         <>
           <Divider />
-          <p className="text-secondary text-xs uppercase tracking-widest font-bold mb-2">
-            Actions
-          </p>
-          <div className="flex flex-col gap-2">
+          <SectionHeader>Actions</SectionHeader>
+          <div className="flex flex-col gap-3">
             {creature.actions.map((action) => (
               <p
                 key={action.id}
-                className="text-xs leading-relaxed text-[#c9c3b0]"
+                className="text-sm leading-relaxed text-[#e2ddd0]"
               >
-                <span className="font-bold italic text-[#c9c3b0]">
+                <span className="font-bold text-secondary">
                   {action.name}
                   {action.type === "Recharge" && action.recharge
                     ? ` (Recharge ${action.recharge})`
@@ -222,15 +256,11 @@ export default function CreatureStatBlockPreview({ creature }) {
       {creature.reactions?.length > 0 && (
         <>
           <Divider />
-          <p className="text-secondary text-xs uppercase tracking-widest font-bold mb-2">
-            Reactions
-          </p>
-          <div className="flex flex-col gap-2">
+          <SectionHeader>Reactions</SectionHeader>
+          <div className="flex flex-col gap-3">
             {creature.reactions.map((r) => (
-              <p key={r.id} className="text-xs leading-relaxed text-[#c9c3b0]">
-                <span className="font-bold italic text-[#c9c3b0]">
-                  {r.name}.{" "}
-                </span>
+              <p key={r.id} className="text-sm leading-relaxed text-[#e2ddd0]">
+                <span className="font-bold text-secondary">{r.name}. </span>
                 {r.description}
               </p>
             ))}
@@ -242,21 +272,19 @@ export default function CreatureStatBlockPreview({ creature }) {
       {hasLegendary && (
         <>
           <Divider />
-          <p className="text-secondary text-xs uppercase tracking-widest font-bold mb-2">
-            Legendary actions
-          </p>
+          <SectionHeader>Legendary actions</SectionHeader>
           {creature.legendaryActionsPerRound && (
-            <p className="text-xs text-[#c9c3b0] mb-2 italic">
+            <p className="text-sm text-secondary mb-3">
               The creature can take {creature.legendaryActionsPerRound}{" "}
               legendary{" "}
               {creature.legendaryActionsPerRound === "1" ? "action" : "actions"}{" "}
               per round.
             </p>
           )}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {creature.legendaryActions?.map((la) => (
-              <p key={la.id} className="text-xs leading-relaxed text-[#c9c3b0]">
-                <span className="font-bold italic text-[#c9c3b0]">
+              <p key={la.id} className="text-sm leading-relaxed text-[#e2ddd0]">
+                <span className="font-bold text-secondary">
                   {la.name}
                   {la.cost && la.cost !== "1"
                     ? ` (Costs ${la.cost} Actions)`
@@ -270,15 +298,15 @@ export default function CreatureStatBlockPreview({ creature }) {
         </>
       )}
 
-      {/* Special reminders — DM only, highlighted */}
+      {/* DM reminders */}
       {creature.specialReminders && (
         <>
           <Divider />
-          <div className="border border-secondary p-3">
-            <p className="text-[10px] uppercase tracking-widest text-secondary mb-1">
+          <div className="border border-secondary p-4">
+            <p className="text-xs uppercase tracking-widest text-secondary mb-2">
               DM reminders
             </p>
-            <p className="text-xs text-primary leading-relaxed">
+            <p className="text-sm text-primary leading-relaxed">
               {creature.specialReminders}
             </p>
           </div>
