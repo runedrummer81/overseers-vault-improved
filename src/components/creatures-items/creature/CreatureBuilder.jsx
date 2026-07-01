@@ -154,10 +154,7 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
           {/* Choice */}
           <div
             className="absolute inset-0 flex flex-col gap-6 pt-4 overflow-y-auto"
-            style={{
-              opacity: view === "choice" ? 1 : 0,
-              pointerEvents: view === "choice" ? "auto" : "none",
-            }}
+            style={{ display: view === "choice" ? "flex" : "none" }}
           >
             <div>
               <p className="text-primary text-xl uppercase tracking-widest mb-1">
@@ -191,21 +188,15 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
           {/* Import search */}
           <div
             className="absolute inset-0 flex flex-col"
-            style={{
-              opacity: view === "import" ? 1 : 0,
-              pointerEvents: view === "import" ? "auto" : "none",
-            }}
+            style={{ display: view === "import" ? "flex" : "none" }}
           >
-            <Open5eSearch onImport={handleImport} />
+            <Open5eSearch onImport={handleImport} active={view === "import"} />
           </div>
 
           {/* Form + live preview */}
           <div
             className="absolute inset-0 flex gap-0"
-            style={{
-              opacity: view === "form" ? 1 : 0,
-              pointerEvents: view === "form" ? "auto" : "none",
-            }}
+            style={{ display: view === "form" ? "flex" : "none" }}
           >
             <div className="overflow-y-auto pr-6" style={{ flex: "0 0 65%" }}>
               <CreatureForm
