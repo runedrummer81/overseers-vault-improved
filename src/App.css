@@ -34,3 +34,34 @@ body {
 .ProseMirror li {
   margin: 0.25rem 0;
 }
+
+/* Hide native scrollbars — custom GemScrollbar handles scroll indication */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-dark-border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-dark-border) transparent;
+}

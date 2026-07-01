@@ -52,6 +52,8 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
   const [creature, setCreature] = useState(EMPTY_CREATURE);
   const [autoCalc, setAutoCalc] = useState(true);
   const [fading, setFading] = useState(false);
+  const [pendingImport, setPendingImport] = useState(null); // creature selected in search
+  const [importing, setImporting] = useState(false);
 
   // Fade everything out, run updates while invisible, fade back in.
   const switchView = useCallback((newView, onSwitch) => {
@@ -97,6 +99,7 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
               onClick: () =>
                 switchView("import", () => {
                   setCreature(EMPTY_CREATURE);
+                  setPendingImport(null);
                   if (onLabelChange) onLabelChange("New creature");
                 }),
               tooltip: "Go back — your current changes will be lost",
@@ -134,6 +137,26 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
           style={{ minHeight: "56px" }}
         >
           {breadcrumbSteps && <Breadcrumb steps={breadcrumbSteps} />}
+
+          {/* Import button — shows in header when a creature is selected in the search */}
+          {view === "import" && pendingImport && (
+            <button
+              onClick={() => {
+                if (importing) return;
+                setImporting(true);
+                setTimeout(() => {
+                  handleImport(pendingImport);
+                  setPendingImport(null);
+                  setImporting(false);
+                }, 300);
+              }}
+              className="px-5 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 shrink-0 ml-auto bg-secondary text-dark-bg hover:bg-primary cursor-pointer"
+            >
+              {importing ? "Importing..." : "Import creature"}
+            </button>
+          )}
+
+          {/* Save button — shows on the form view */}
           {view === "form" && (
             <button
               onClick={handleSave}
@@ -190,7 +213,11 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
             className="absolute inset-0 flex flex-col"
             style={{ display: view === "import" ? "flex" : "none" }}
           >
-            <Open5eSearch onImport={handleImport} active={view === "import"} />
+            <Open5eSearch
+              active={view === "import"}
+              selected={pendingImport}
+              onSelectCreature={setPendingImport}
+            />
           </div>
 
           {/* Form + live preview */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { EMPTY_CREATURE } from "./creatureConstants";
 import CreatureStatBlockPreview from "./CreatureStatBlockPreview";
 
@@ -125,23 +126,55 @@ function mapOpen5eToCreature(m) {
   };
 }
 
-export default function Open5eSearch({ onImport, active }) {
+function RowArrow({ color = "var(--color-secondary)" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 35.9 67.5"
+      className="h-full w-auto"
+    >
+      <polyline
+        points="1.4 66.8 34.5 33.8 1.4 .7"
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeMiterlimit="10"
+      />
+      <polyline
+        points="17.9 17.2 1.4 33.8 17.9 50.3"
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeMiterlimit="10"
+      />
+      <polyline
+        points="1.4 .7 1.4 17.2 17.9 33.8 1.4 50.3 1.4 66.8"
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeMiterlimit="10"
+      />
+    </svg>
+  );
+}
+
+const ARROW_W = 26;
+
+// selected & onSelectCreature are lifted to CreatureBuilder so the Import button
+// can live in the breadcrumb header row there.
+export default function Open5eSearch({ active, selected, onSelectCreature }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selected, setSelected] = useState(null); // mapped creature shown in stat block
-  const [panelFading, setPanelFading] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const inputRef = useRef(null);
+  const [focused, setFocused] = useState(false);
+  const searchRef = useRef(null);
   const debouncedQuery = useDebounce(query, 280);
 
-  // Focus the input only when the import view becomes active, not on initial mount
   useEffect(() => {
-    if (active) inputRef.current?.focus();
+    if (active) searchRef.current?.focus();
   }, [active]);
 
-  // Search the API whenever the debounced query changes
   useEffect(() => {
     if (!debouncedQuery.trim()) {
       setResults([]);
@@ -165,177 +198,172 @@ export default function Open5eSearch({ onImport, active }) {
       });
   }, [debouncedQuery]);
 
-  // Fade the content panel, run a state update while invisible, fade back in
-  const fadePanel = (onSwitch) => {
-    setPanelFading(true);
-    setTimeout(() => {
-      onSwitch();
-      setPanelFading(false);
-    }, FADE_MS);
-  };
+  const handleSelect = (monster) =>
+    onSelectCreature(mapOpen5eToCreature(monster));
 
-  // Clicking a result: fade out results, show full stat block
-  const handleSelect = (monster) => {
-    const mapped = mapOpen5eToCreature(monster);
-    fadePanel(() => setSelected(mapped));
-  };
-
-  // Typing while a stat block is shown: instantly clear selection, show results
   const handleQueryChange = (e) => {
-    const val = e.target.value;
-    setQuery(val);
-    if (selected) setSelected(null); // instant — user already expressed intent to search
+    setQuery(e.target.value);
+    if (selected) onSelectCreature(null);
   };
 
-  const handleImport = () => {
-    if (!selected) return;
-    setImporting(true);
-    setTimeout(() => {
-      onImport(selected);
-      setImporting(false);
-    }, 300);
-  };
-
+  const borderColor = focused ? "border-primary" : "border-dark-border";
+  const arrowColor = focused
+    ? "var(--color-primary)"
+    : "var(--color-secondary)";
+  const showDropdown = !selected && !!debouncedQuery.trim() && !loading;
   const showStatBlock = !!selected;
-  const showResults =
-    !selected &&
-    (loading || results.length > 0 || error || debouncedQuery.trim());
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-4">
-      {/* Search input — always visible */}
-      <div className="relative shrink-0">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary pointer-events-none"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Search bar */}
+      <div className="shrink-0">
+        <div className="relative">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none transition-colors duration-150 ${focused ? "text-primary" : "text-secondary"}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"
+            />
+          </svg>
+          <input
+            ref={searchRef}
+            type="text"
+            value={query}
+            onChange={handleQueryChange}
+            onFocus={() => {
+              setFocused(true);
+              if (selected) onSelectCreature(null);
+            }}
+            onBlur={() => setFocused(false)}
+            placeholder="Search monsters... e.g. Beholder, Dragon, Goblin"
+            className={`w-full bg-transparent border-2 ${borderColor} text-primary placeholder-secondary pl-10 pr-10 py-3 focus:outline-none transition-colors duration-150 text-sm`}
           />
-        </svg>
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={handleQueryChange}
-          onFocus={() => {
-            if (selected) setSelected(null);
-          }}
-          placeholder="Search monsters... e.g. Beholder, Dragon, Goblin"
-          className="w-full bg-transparent border-2 border-dark-border text-primary placeholder-secondary pl-10 pr-10 py-3 focus:outline-none focus:border-primary transition-colors duration-150 text-sm"
-        />
-        {loading && (
-          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-secondary border-t-primary rounded-full animate-spin" />
-        )}
+          {loading && (
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-secondary border-t-primary rounded-full animate-spin" />
+          )}
+        </div>
+
+        {/* Dropdown */}
+        <AnimatePresence>
+          {showDropdown && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className={`border-l-2 border-r-2 border-b-2 ${borderColor} bg-dark-muted overflow-hidden transition-colors duration-150`}
+            >
+              <div style={{ overflowY: "auto", maxHeight: "380px" }}>
+                {error && (
+                  <p className="text-red-400 text-xs uppercase tracking-wide px-4 py-3">
+                    {error}
+                  </p>
+                )}
+                {!error && results.length === 0 && (
+                  <div className="px-6 py-10 flex flex-col gap-3">
+                    <p className="text-primary text-base font-bold uppercase tracking-wide">
+                      No results for "{debouncedQuery}"
+                    </p>
+                    <p className="text-primary text-base leading-relaxed">
+                      Many official creatures aren't available here due to
+                      licensing. If you can't find what you're looking for, try
+                      building it manually instead.
+                    </p>
+                  </div>
+                )}
+                {!error &&
+                  results.map((monster) => {
+                    const ac = extractAC(monster.armor_class);
+                    const typeLabel = [monster.size, monster.type]
+                      .filter(Boolean)
+                      .join(" ");
+                    return (
+                      <motion.button
+                        key={monster.slug}
+                        onClick={() => handleSelect(monster)}
+                        whileHover="hover"
+                        initial="rest"
+                        animate="rest"
+                        className="relative w-full text-left border-b border-dark-border last:border-b-0 hover:bg-dark-bg transition-colors duration-150 flex items-stretch cursor-pointer group overflow-hidden"
+                      >
+                        <motion.div
+                          className="absolute left-0 top-0 bottom-0 flex items-center pointer-events-none"
+                          style={{ width: ARROW_W }}
+                          variants={{ rest: { x: -ARROW_W }, hover: { x: 0 } }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <RowArrow color={arrowColor} />
+                        </motion.div>
+                        <motion.div
+                          className="flex items-center gap-4 w-full py-3 pr-4"
+                          variants={{
+                            rest: { paddingLeft: 16 },
+                            hover: { paddingLeft: 16 + ARROW_W },
+                          }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                            <span className="text-sm font-bold uppercase tracking-wide text-secondary group-hover:text-primary transition-colors duration-150 truncate">
+                              {monster.name}
+                            </span>
+                            {typeLabel && (
+                              <span
+                                className="text-sm text-secondary group-hover:text-primary italic transition-colors duration-150 truncate"
+                                style={{ fontFamily: "EB Garamond, serif" }}
+                              >
+                                {typeLabel}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-0.5 shrink-0">
+                            <span className="text-sm font-bold uppercase tracking-wide text-secondary group-hover:text-primary transition-colors duration-150">
+                              CR {monster.challenge_rating}
+                            </span>
+                            <span className="text-sm text-secondary group-hover:text-primary uppercase tracking-wide transition-colors duration-150">
+                              {[
+                                monster.hit_points
+                                  ? `HP ${monster.hit_points}`
+                                  : null,
+                                ac ? `AC ${ac}` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          </div>
+                        </motion.div>
+                      </motion.button>
+                    );
+                  })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Content panel — fades between results list and stat block */}
-      <div
-        className="flex flex-col flex-1 min-h-0"
-        style={{
-          opacity: panelFading ? 0 : 1,
-          transition: `opacity ${FADE_MS}ms ease`,
-          pointerEvents: panelFading ? "none" : "auto",
-        }}
-      >
-        {/* ── Results list ── */}
-        {showResults && !showStatBlock && (
-          <div className="flex flex-col border border-dark-border overflow-y-auto flex-1">
-            {error && (
-              <p className="text-red-400 text-xs uppercase tracking-wide px-4 py-3">
-                {error}
-              </p>
-            )}
-            {!error &&
-              results.map((monster) => {
-                const ac = extractAC(monster.armor_class);
-                return (
-                  <button
-                    key={monster.slug}
-                    onClick={() => handleSelect(monster)}
-                    className="text-left px-4 py-3 border-b border-dark-border last:border-b-0 hover:bg-dark-muted transition-colors duration-150 flex items-center justify-between gap-4 cursor-pointer group"
-                  >
-                    <span className="text-sm font-bold uppercase tracking-wide text-secondary group-hover:text-primary transition-colors duration-150">
-                      {monster.name}
-                    </span>
-                    <span className="text-xs text-secondary shrink-0 uppercase tracking-wide">
-                      CR {monster.challenge_rating}
-                      {monster.hit_points ? ` · HP ${monster.hit_points}` : ""}
-                      {ac ? ` · AC ${ac}` : ""}
-                    </span>
-                  </button>
-                );
-              })}
-            {!error &&
-              !loading &&
-              debouncedQuery.trim() &&
-              results.length === 0 && (
-                <div className="px-4 py-10 text-center flex flex-col gap-2">
-                  <p className="text-secondary text-sm">
-                    No monsters found for "{debouncedQuery}".
-                  </p>
-                  <p className="text-secondary text-xs">
-                    Open5e only covers SRD content. Try building manually for
-                    homebrew or non-SRD creatures.
-                  </p>
-                </div>
-              )}
-          </div>
-        )}
-
-        {/* ── Full stat block preview ── */}
-        {showStatBlock && (
-          <div className="flex flex-col flex-1 min-h-0 gap-4">
-            {/* Import button at top so it's always reachable */}
-            <div className="flex items-center justify-between shrink-0">
-              <p className="text-secondary text-xs uppercase tracking-widest">
-                Click the search bar to find a different creature
-              </p>
-              <button
-                onClick={handleImport}
-                disabled={importing}
-                className="flex items-center gap-2 bg-secondary text-dark-bg text-xs font-bold uppercase tracking-widest px-5 py-2.5 hover:bg-primary transition-colors duration-150 shrink-0 cursor-pointer disabled:opacity-50"
-              >
-                {importing ? "Importing..." : "Import"}
-                {!importing && (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-3.5 h-3.5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2.5}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                )}
-              </button>
-            </div>
-            {/* Stat block — scrollable */}
-            <div className="overflow-y-auto flex-1 border border-dark-border p-5">
+      {/* Stat block — spawns directly under the search bar */}
+      <div className="flex flex-col flex-1 min-h-0">
+        <AnimatePresence mode="wait">
+          {showStatBlock && (
+            <motion.div
+              key={selected?.name}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="flex-1 min-h-0 overflow-y-auto border border-dark-border mt-4"
+              style={{ padding: "20px" }}
+            >
               <CreatureStatBlockPreview creature={selected} />
-            </div>
-          </div>
-        )}
-
-        {/* Empty state — nothing typed yet */}
-        {!showResults && !showStatBlock && (
-          <div className="flex-1 flex items-center justify-center">
-            <p className="text-secondary text-sm">
-              Start typing to search the SRD monster library.
-            </p>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
