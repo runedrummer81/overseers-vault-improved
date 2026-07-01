@@ -120,20 +120,28 @@ export default function CreaturesItemsPage() {
               />
             </div>
 
-            {activeTab ? (
-              activeTab.type === "creature" ? (
-                <CreatureBuilder
-                  key={activeTab.tabId}
-                  onSave={(data) => handleSaveCreature(data, activeTab.tabId)}
-                  isSaving={savingTabId === activeTab.tabId}
-                  onLabelChange={(label) =>
-                    updateTabLabel(activeTab.tabId, label)
-                  }
-                />
-              ) : (
-                <EntryBuilderPlaceholder type={activeTab.type} />
-              )
-            ) : (
+            {/* Render every tab's builder but only show the active one.
+                This keeps component state alive across tab switches — no remounting. */}
+            {tabs.map((tab) => (
+              <div
+                key={tab.tabId}
+                className="flex flex-col flex-1 min-h-0"
+                style={{ display: tab.tabId === activeTabId ? "flex" : "none" }}
+              >
+                {tab.type === "creature" ? (
+                  <CreatureBuilder
+                    onSave={(data) => handleSaveCreature(data, tab.tabId)}
+                    isSaving={savingTabId === tab.tabId}
+                    onLabelChange={(label) => updateTabLabel(tab.tabId, label)}
+                  />
+                ) : (
+                  <EntryBuilderPlaceholder type={tab.type} />
+                )}
+              </div>
+            ))}
+
+            {/* Empty state — only shown when no tabs are open */}
+            {tabs.length === 0 && (
               <div className="flex-1 min-h-0 border border-dashed border-dark-border flex items-center justify-center text-center p-10">
                 <div>
                   <p className="text-[#c9c3b0] text-base mb-1.5">

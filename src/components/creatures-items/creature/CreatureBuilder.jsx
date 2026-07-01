@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useCallback } from "react";
 import ChoiceCard from "../ChoiceCard";
 import Open5eSearch from "./Open5eSearch";
 import CreatureForm from "./CreatureForm";
 import CreatureStatBlockPreview from "./CreatureStatBlockPreview";
 import Breadcrumb from "./Breadcrumb";
 import { EMPTY_CREATURE } from "./creatureConstants";
+
+const FADE_MS = 140;
 
 function ImportIcon() {
   return (
@@ -50,6 +51,17 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
   const [method, setMethod] = useState(null);
   const [creature, setCreature] = useState(EMPTY_CREATURE);
   const [autoCalc, setAutoCalc] = useState(true);
+  const [fading, setFading] = useState(false);
+
+  // Fade everything out, run updates while invisible, fade back in.
+  const switchView = useCallback((newView, onSwitch) => {
+    setFading(true);
+    setTimeout(() => {
+      setView(newView);
+      if (onSwitch) onSwitch();
+      setFading(false);
+    }, FADE_MS);
+  }, []);
 
   const handleCreatureChange = (updated) => {
     setCreature(updated);
@@ -57,9 +69,10 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
   };
 
   const handleImport = (imported) => {
-    setCreature(imported);
-    if (onLabelChange) onLabelChange(imported.name || "New creature");
-    setView("form");
+    switchView("form", () => {
+      setCreature(imported);
+      if (onLabelChange) onLabelChange(imported.name || "New creature");
+    });
   };
 
   const handleSave = async () => {
@@ -70,42 +83,62 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
   const methodLabel =
     method === "import" ? "Import from Open5e" : "Build manually";
 
-  // Breadcrumb steps computed from current view — lives outside AnimatePresence
-  // so only individual steps animate in/out, not the whole breadcrumb
   const breadcrumbSteps =
     view === "import"
       ? [
-          { label: "New creature", onClick: () => setView("choice") },
+          { label: "New creature", onClick: () => switchView("choice") },
           { label: "Import from Open5e" },
         ]
-      : view === "form"
+      : view === "form" && method === "import"
         ? [
             { label: "New creature" },
             {
-              label: methodLabel,
-              onClick: () => {
-                setCreature(EMPTY_CREATURE);
-                if (onLabelChange) onLabelChange("New creature");
-                setView(method);
-              },
-              tooltip: "Go back - your current changes will be lost!",
+              label: "Import from Open5e",
+              onClick: () =>
+                switchView("import", () => {
+                  setCreature(EMPTY_CREATURE);
+                  if (onLabelChange) onLabelChange("New creature");
+                }),
+              tooltip: "Go back — your current changes will be lost",
             },
             { label: creature.name?.trim() || "Stat block" },
           ]
-        : null;
+        : view === "form" && method === "manual"
+          ? [
+              {
+                label: "New creature",
+                onClick: () =>
+                  switchView("choice", () => {
+                    setCreature(EMPTY_CREATURE);
+                    if (onLabelChange) onLabelChange("New creature");
+                  }),
+                tooltip: "Go back — your current changes will be lost",
+              },
+              { label: creature.name?.trim() || "Stat block" },
+            ]
+          : null;
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* ── Persistent header — outside AnimatePresence so breadcrumb
-          never fades between views, only individual steps animate ── */}
-      {breadcrumbSteps && (
-        <div className="flex items-center justify-between pt-4 pb-3 shrink-0">
-          <Breadcrumb steps={breadcrumbSteps} />
+      {/* Everything fades together — header + views as one unit */}
+      <div
+        className="flex flex-col flex-1 min-h-0"
+        style={{
+          opacity: fading ? 0 : 1,
+          transition: `opacity ${FADE_MS}ms ease`,
+        }}
+      >
+        {/* Header — always rendered at fixed height to prevent layout shifts */}
+        <div
+          className="flex items-center justify-between pt-4 pb-3 shrink-0"
+          style={{ minHeight: "56px" }}
+        >
+          {breadcrumbSteps && <Breadcrumb steps={breadcrumbSteps} />}
           {view === "form" && (
             <button
               onClick={handleSave}
               disabled={!creature.name?.trim() || isSaving}
-              className={`px-5 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 shrink-0 ml-4 ${
+              className={`px-5 py-2 text-xs font-bold uppercase tracking-widest transition-colors duration-150 shrink-0 ml-auto ${
                 creature.name?.trim() && !isSaving
                   ? "bg-secondary text-dark-bg hover:bg-primary cursor-pointer"
                   : "bg-dark-muted text-secondary cursor-not-allowed"
@@ -115,18 +148,16 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
             </button>
           )}
         </div>
-      )}
 
-      {/* ── View content — fades in/out independently of breadcrumb ── */}
-      <AnimatePresence mode="wait">
-        {view === "choice" && (
-          <motion.div
-            key="choice"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-col gap-6 justify-center py-8"
+        {/* Views — all mounted, opacity controls which is visible */}
+        <div className="relative flex-1 min-h-0">
+          {/* Choice */}
+          <div
+            className="absolute inset-0 flex flex-col gap-6 pt-4 overflow-y-auto"
+            style={{
+              opacity: view === "choice" ? 1 : 0,
+              pointerEvents: view === "choice" ? "auto" : "none",
+            }}
           >
             <div>
               <p className="text-primary text-xl uppercase tracking-widest mb-1">
@@ -141,46 +172,40 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
                 icon={<ImportIcon />}
                 title="Import from Open5e"
                 description="Search the SRD monster library and import a full stat block in one click."
-                onClick={() => {
-                  setMethod("import");
-                  setView("import");
-                }}
+                onClick={() => switchView("import", () => setMethod("import"))}
               />
               <ChoiceCard
                 icon={<ManualIcon />}
                 title="Build manually"
                 description="Fill in the stat block yourself from scratch or adapt a homebrew creature."
-                onClick={() => {
-                  setMethod("manual");
-                  setCreature(EMPTY_CREATURE);
-                  setView("form");
-                }}
+                onClick={() =>
+                  switchView("form", () => {
+                    setMethod("manual");
+                    setCreature(EMPTY_CREATURE);
+                  })
+                }
               />
             </div>
-          </motion.div>
-        )}
+          </div>
 
-        {view === "import" && (
-          <motion.div
-            key="import"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-col flex-1 min-h-0"
+          {/* Import search */}
+          <div
+            className="absolute inset-0 flex flex-col"
+            style={{
+              opacity: view === "import" ? 1 : 0,
+              pointerEvents: view === "import" ? "auto" : "none",
+            }}
           >
             <Open5eSearch onImport={handleImport} />
-          </motion.div>
-        )}
+          </div>
 
-        {view === "form" && (
-          <motion.div
-            key="form"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-1 min-h-0 gap-0"
+          {/* Form + live preview */}
+          <div
+            className="absolute inset-0 flex gap-0"
+            style={{
+              opacity: view === "form" ? 1 : 0,
+              pointerEvents: view === "form" ? "auto" : "none",
+            }}
           >
             <div className="overflow-y-auto pr-6" style={{ flex: "0 0 65%" }}>
               <CreatureForm
@@ -198,9 +223,9 @@ export default function CreatureBuilder({ onSave, isSaving, onLabelChange }) {
               </p>
               <CreatureStatBlockPreview creature={creature} />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

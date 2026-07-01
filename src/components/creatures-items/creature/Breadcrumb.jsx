@@ -27,7 +27,7 @@ function BreadcrumbStep({ step, isLast }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 pointer-events-none"
+              className="absolute top-full left-0 mt-2 z-50 pointer-events-none"
             >
               <div className="bg-primary text-dark-bg text-xs font-bold uppercase tracking-wide px-4 py-2 whitespace-nowrap">
                 {step.tooltip}
